@@ -1,0 +1,90 @@
+{
+    "_description": "Adversarial training (univ perturbation) for Librispeech speaker identification.",
+    "general":{
+        "device":{
+            "device_qty": 4
+        },
+        "num_data_workers": 4,
+        "use_amp": false,
+        "master_port": 9999,
+        "base_seed": 0 
+    },
+    "dataset": {
+        "root": "",
+        "name": "twosix_librispeech"
+    },
+    "model":{
+         "architecture": "sincnet",
+         "pretrained": false,
+         "weights_file": "sample_exper_dir/twosix_librispeech/normal/sincnet/train_model/snapshots"
+    },
+    "training": [
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": true,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/twosix_librispeech/univ_perturb/sincnet/train_model/snapshots",
+            "log_dir": "sample_exper_dir/twosix_librispeech/univ_perturb/sincnet/train_model/logs",
+            "para_type": "data",
+            "train_batch_size": 512,
+            "batch_sync_step": 32,
+            "epoch_qty": 100,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "eps": 0.02,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.001,
+                    "start": "random"
+                }
+            },
+            "optimizer": {
+                "algorithm": "sgd",
+                "init_lr": 0.00005,
+                "add_arguments": {
+                    "momentum": 0.9,
+                    "weight_decay": 1e-5
+                },
+                "scheduler": {
+                    "scheduler_type": "one_cycle",
+                    "add_arguments": {
+                        "max_lr": 0.0001,
+                        "pct_start": 0.3
+                    }
+                }
+            }
+        },
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": false,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/twosix_librispeech/univ_perturb/sincnet/train_attack/snapshots",
+            "log_dir": "sample_exper_dir/twosix_librispeech/univ_perturb/sincnet/train_attack/logs",
+            "para_type": "independent",
+            "instance_qty": 4,
+            "train_batch_size": 512,
+            "batch_sync_step": 32,
+            "epoch_qty": 25,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "targets": [22, 25, 15, 11],
+                "eps": 0.02,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.001,
+                    "start": "random"
+                }
+            }
+        }
+    ],
+   "evaluation" : {
+        "log_dir": "sample_exper_dir/twosix_librispeech/normal/sincnet/eval_model/logs",
+        "eval_batch_size": 64,
+        "evaluators": [
+            {
+                "evaluator_name": "normal",
+                "evaluator_type": "normal"
+            }
+        ]
+    }
+}

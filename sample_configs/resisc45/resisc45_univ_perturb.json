@@ -1,0 +1,145 @@
+{
+    "_description": "Universal perturbation training for RESISC-45 image classification",
+    "general":{
+        "device":{
+            "device_qty": 1
+        },
+        "num_data_workers": 2,
+        "use_amp": false,
+        "master_port": 9999,
+        "base_seed": 0 
+    },
+    "dataset": {
+        "root": "data",
+        "name": "resisc45"
+    },
+    "model":{
+         "architecture": "densenet121",
+         "pretrained": true,
+         "weights_file": "sample_exper_dir/resisc45/normal/densenet121/train_model/snapshots/"
+    },
+    "training":[
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": true,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_model/snapshots",
+            "log_dir": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_model/logs",
+            "para_type": "data",
+            "train_batch_size": 32,
+            "batch_sync_step": 32,
+            "epoch_qty": 30,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "eps": 0.031,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.001,
+                    "start": "random"
+                }
+            },
+            "optimizer": {
+                "algorithm": "sgd",
+                "init_lr": 0.00001,
+                "add_arguments": {
+                    "momentum": 0.9,
+                    "weight_decay": 0.1
+                },
+                "scheduler": {
+                    "scheduler_type": "one_cycle",
+                    "add_arguments": {
+                        "max_lr": 0.0001,
+                        "pct_start": 0.3
+                    }
+                }
+            }
+        },
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": false,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/snapshots",
+            "log_dir": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/logs",
+            "para_type": "independent",
+            "instance_qty": 4,
+            "train_batch_size": 24,
+            "batch_sync_step": 64,
+            "epoch_qty": 30,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "targets": [27, 7, 8, 40],
+                "eps": 0.031,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.001,
+                    "start": "random"
+                }
+            }
+        }
+    ],
+    "evaluation" : {
+        "log_dir": "sample_exper_dir/resisc45/univ_perturb/densenet121/eval_model/logs",
+        "eval_batch_size": 32,
+        "evaluators": [
+            {
+                "evaluator_name": "normal",
+                "evaluator_type": "normal"
+            },
+            {
+                "evaluator_name": "univ. perturbation 0",
+                "evaluator_type": "defense",
+                "attack": {
+                    "attack_type" : "univ_perturb",
+                    "weights_file": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/snapshots/run0",
+                    "eps" : 0.031,
+                    "norm" : "linf"
+                }
+            },
+            {
+                "evaluator_name": "univ. perturbation 1",
+                "evaluator_type": "defense",
+                "attack": {
+                    "attack_type" : "univ_perturb",
+                    "weights_file": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/snapshots/run1",
+                    "eps" : 0.031,
+                    "norm" : "linf"
+                }
+            },
+            {
+                "evaluator_name": "univ. perturbation 2",
+                "evaluator_type": "defense",
+                "attack": {
+                    "attack_type" : "univ_perturb",
+                    "weights_file": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/snapshots/run2",
+                    "eps" : 0.031,
+                    "norm" : "linf"
+                }
+            },
+            {
+                "evaluator_name": "univ. perturbation 3",
+                "evaluator_type": "defense",
+                "attack": {
+                    "attack_type" : "univ_perturb",
+                    "weights_file": "sample_exper_dir/resisc45/univ_perturb/densenet121/train_attack/snapshots/run1",
+                    "eps" : 0.031,
+                    "norm" : "linf"
+                }
+            },
+            {
+                "evaluator_name": "pgd eps=0.031 steps=10",
+                "evaluator_type": "defense",
+                "attack": {
+                    "attack_type": "pgd",
+                    "eps": 0.03,
+                    "norm": "linf",
+                    "add_arguments": {
+                        "alpha": 0.01,
+                        "num_iters": 10,
+                        "restarts": 1,
+                        "start": "random"
+                    }
+                }
+            }
+        ]
+    }
+}

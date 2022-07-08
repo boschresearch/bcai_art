@@ -1,0 +1,79 @@
+{
+    "_description": "PGD training for MNIST image classification",
+    "general":{
+        "device":{
+            "device_qty": 1
+        },
+        "num_data_workers": 0,
+        "use_amp": false,
+        "master_port": 9999,
+        "base_seed": 0 
+    },
+    "dataset": {
+        "root": "datasets/mnist",
+        "name": "mnist"
+    },
+    "model":{
+         "architecture": "mnistnet",
+         "pretrained": false,
+         "weights_file": "sample_exper_dir/mnist/normal/mnistnet/train_model/snapshots/"
+    },
+    "training": [
+        {
+            "trainer_type": "adv_free",
+            "train_model": true,
+            "snapshot_dir": "sample_exper_dir/mnist/free/mnistnet/train_model/snapshots",
+            "log_dir": "sample_exper_dir/mnist/free/mnistnet/train_model/logs",
+            "para_type": "data",
+            "train_batch_size": 512,
+            "epoch_qty": 25,
+            "batch_sync_step": 8,
+            "eps": 0.2,
+            "norm": "linf",
+            "optimizer": {
+                "algorithm": "sgd",
+                "init_lr": 0.001,
+                "add_arguments": {
+                    "momentum": 0.9,
+                    "weight_decay": 0.256
+                },
+                "scheduler": {
+                    "scheduler_type": "one_cycle",
+                    "add_arguments": {
+                        "max_lr": 0.00078,
+                        "anneal_strategy": "linear",
+                        "pct_start": 0.2
+                    }
+                }
+            }
+        }
+    ],
+    "evaluation" : {
+        "log_dir": "sample_exper_dir/mnist/free/mnistnet/eval_model/logs",
+        "eval_batch_size": 64,
+        "evaluators": [
+            {
+                "evaluator_name": "normal",
+                "evaluator_type": "normal"
+            },
+            {
+                "evaluator_name": "pgd eps=0.2 steps=10 (attack)",
+                "evaluator_type": "attack",
+                "add_arguments": {
+                    "sample_qty" : 32
+                },
+                "attack": {
+                    "attack_type": "pgd",
+                    "eps": 0.2,
+                    "norm": "linf",
+                    "add_arguments": {
+                        "alpha": 0.05,
+                        "num_iters": 10,
+                        "restarts": 1,
+                        "start": "random"
+                    }
+                }
+            }
+        ]
+    }
+}

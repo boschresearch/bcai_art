@@ -1,0 +1,256 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "attack": {
+            "additionalProperties": false,
+            "properties": {
+                "attack_type": {
+                    "enum": [   "fgsm", "pgd",
+                                "patch", "univ_perturb",
+                                "frame_saliency",
+                                "front_rev_simple",
+                                "dummy" ] },
+                "eps": { "type": "number" },
+                "norm": { "enum": ["l1", "l2", "l3", "l4", "linf"] },
+                "inner_attack": { "$ref": "#definitions/attack" },
+                "add_arguments": { "type": "object"},
+                "targets": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                },
+                "weights_file": { "type": "string" }
+            },
+            "required": [
+                "attack_type"
+            ],
+            "type": "object"
+        },
+        "evaluator": {
+            "additionalProperties": true,
+            "properties": {
+                "evaluator_name": { "type": "string" },
+                "evaluator_type": {
+                    "enum": [
+                        "normal",
+                        "attack",
+                        "defense",
+                        "randomized_smoothing",
+                        "derandomized_smoothing",
+                        "random_crops",
+                        "random_crops_certification"
+                    ],
+                    "type": "string"
+                },
+                "attack": { "$ref": "#definitions/attack" },
+                "add_arguments": { "type": "object"}
+            },
+            "required": [
+                "evaluator_type",
+                "evaluator_name"
+            ],
+            "type": "object"
+        },
+        "optimizer": {
+            "properties": {
+                "algorithm": {
+                    "enum": [
+                        "sgd",
+                        "adam",
+                        "rmsprop"
+                    ],
+                    "type": "string"
+                },
+                "init_lr":{ "type": "number" },
+                "add_arguments": { "type": "object"},
+                "scheduler":{ "$ref": "#definitions/scheduler" }
+            },
+            "required": [
+                "algorithm",
+                "init_lr"
+            ],
+            "type": "object"
+        },
+        "evaluation": {
+            "additionalProperties": false,
+            "properties": {
+                "evaluators": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/evaluator" }
+                },
+                "eval_batch_size": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "log_dir": { "type": "string" }
+            },
+            "required": [
+                "evaluators",
+                "eval_batch_size",
+                "log_dir"
+            ],
+            "type": "object"
+        },
+        "trainer": {
+            "additionalProperties": true,
+            "properties": {
+                "trainer_type": {
+                    "enum": [
+                        "normal",
+                        "adv_fast",
+                        "adv_free",
+                        "adv_plug_attack",
+                        "derandomized_smoothing",
+                        "random_crops"
+                    ],
+                    "type": "string"
+                },
+                "train_model": { "type": "boolean" },
+                "optimizer":{ "$ref": "#definitions/optimizer" },
+                "train_attack": { "type": "boolean" },
+                "attack": { "$ref": "#definitions/attack" },
+                "attack_list" : {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#definitions/attack"
+                    }
+                },
+                "snapshot_dir": { "type": "string" },
+                "log_dir": { "type": "string" },
+                "para_type": { "enum": [ "data", "attack", "independent" ] },
+                "instance_qty": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "batch_sync_step":{
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "train_batch_size":{
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "epoch_qty":{
+                    "type": "integer",
+                    "minimum": 1
+                }
+            },
+            "required": [
+                "trainer_type",
+                "train_model",
+                "epoch_qty",
+                "train_batch_size",
+                "batch_sync_step",
+                "log_dir"
+            ],
+            "type": "object"
+        },
+        "training": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/trainer"
+            }
+        },
+        "scheduler":{
+            "additionalProperties": false,
+            "properties":{
+                "scheduler_type": { "type": "string" },
+                "add_arguments": { "type": "object" }
+            },
+            "required":[
+              "scheduler_type"
+            ],
+            "type": "object"
+        },
+        "dataset": {
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string" },
+                "root": { "type": "string" },
+                "annot_file": {
+                    "type": "array",
+                    "items": { "type": "array", "items": { "type": "string" } }
+                },
+                "mean": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "std": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "add_arguments": {
+                    "type": "object"
+                }
+            },
+            "required": [
+                "root",
+                "name"
+            ],
+            "type": "object"
+        },
+        "model": {
+            "additionalProperties": true,
+            "properties": {
+                "architecture": { "type": "string" },
+                "weights_file": { "type": "string" },
+                "add_arguments": { "type": "object" },
+                "pretrained": { "type": "boolean" },
+                "inner_model": { "$ref": "#/definitions/model" }
+            },
+            "required": [
+                "architecture"
+            ],
+            "type": "object"
+        },
+        "device":{
+            "additionalProperties": false,
+            "properties":{
+                "device_qty": { "type": "integer" },
+                "device_name": { "type": "string" }
+            },
+            "type": "object"
+        },
+        "general": {
+            "additionalProperties": false,
+            "properties": {
+                "device": {  "$ref": "#/definitions/device" },
+                "num_data_workers": { "type": "integer" },
+                "use_amp": { "type": "boolean" },
+                "master_port": { "type": "integer" },
+                "base_seed": { "type": "integer" },
+                "dist_backend": { 
+                    "enum":["gloo", "nccl", "mpi"], 
+                    "type":"string"
+                }
+            },
+            "required": [
+                "device",
+                "base_seed",
+                "num_data_workers",
+                "use_amp"
+            ],
+            "type": "object"
+        }
+    },
+    "additionalProperties": false,
+    "properties": {
+        "_description": {
+            "type": "string"
+        },
+        "evaluation": { "$ref": "#/definitions/evaluation" },
+        "training": { "$ref": "#/definitions/training" },
+        "dataset": { "$ref": "#/definitions/dataset" },
+        "general":{ "$ref": "#/definitions/general" },
+        "model": { "$ref": "#/definitions/model" }
+    },
+    "required": [
+        "_description",
+        "dataset",
+        "model",
+        "general",
+        "training",
+        "evaluation"
+    ],
+    "title": "JSON configuration",
+    "type": "object"
+}

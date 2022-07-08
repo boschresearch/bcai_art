@@ -1,0 +1,20 @@
+numpy
+jupyter
+pycocotools
+ipython
+matplotlib
+tqdm
+pandas
+torch
+torchvision
+torchaudio
+scikit-learn
+scikit-image
+jsonschema==3.2.0
+scikit-video
+tensorboard
+tensorboard-plugin-wit
+# Downgraded version is required by tensorflow
+absl-py==0.12
+tensorflow-cpu
+tensorflow-datasets==3.2.0

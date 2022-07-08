@@ -1,0 +1,121 @@
+{
+    "_description": "Universal perturbation training for CIFAR10 image classification",
+    "general":{
+        "device":{
+            "device_qty": 4
+        },
+        "num_data_workers": 2,
+        "use_amp": false,
+        "master_port": 9999,
+        "base_seed": 0 
+    },
+    "dataset": {
+        "root": "datasets/cifar10",
+        "name": "cifar10"
+    },
+    "model": {
+         "architecture": "resnet9_cifar",
+         "pretrained": false,
+         "weights_file": "sample_exper_dir/cifar10/normal/resnet9/train_model/snapshots/"
+    },
+    "training": [
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": true,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/cifar10/univ_perturb/resnet9/train_model/snapshots",
+            "log_dir": "sample_exper_dir/cifar10/univ_perturb/resnet9/train_model/logs",
+            "para_type": "data",
+            "train_batch_size": 512,
+            "batch_sync_step": 8,
+            "epoch_qty": 25,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "eps": 0.031,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.1,
+                    "start": "random"
+                }
+            },
+            "optimizer": {
+                "algorithm": "sgd",
+                "init_lr": 0.001,
+                "add_arguments": {
+                    "momentum": 0.9,
+                    "weight_decay": 0.256
+                },
+                "scheduler": {
+                    "scheduler_type": "cyclic",
+                    "add_arguments": {
+                        "max_lr": 0.00078,
+                        "base_lr": 0.00001,
+                        "mode": "triangular2",
+                        "gamma": 0.9,
+                        "cycle_qty": 4,
+                        "pct_start": 0.2
+                    }
+                }
+            }
+        },
+        {
+            "trainer_type": "adv_plug_attack",
+            "train_model": false,
+            "train_attack": true,
+            "snapshot_dir": "sample_exper_dir/cifar10/univ_perturb/resnet9/train_attack/snapshots",
+            "log_dir": "sample_exper_dir/cifar10/univ_perturb/resnet9/train_attack/logs",
+            "para_type": "independent",
+            "instance_qty": 8,
+            "train_batch_size": 512,
+            "batch_sync_step": 8,
+            "epoch_qty": 10,
+            "attack": {
+                "attack_type": "univ_perturb",
+                "eps": 0.031,
+                "norm": "linf",
+                "add_arguments": {
+                    "alpha": 0.1,
+                    "start": "random"
+                }
+            }
+        }
+    ],
+    "evaluation" : {
+        "log_dir": "sample_exper_dir/cifar10/univ_perturb/resnet9/eval_model/logs",
+        "eval_batch_size": 64,
+        "evaluators": [
+            {
+                "evaluator_name": "normal",
+                "evaluator_type": "normal"
+            },
+            {
+                "evaluator_name": "univ. perturbation",
+                "evaluator_type": "attack",
+                "add_arguments": {
+                    "sample_qty" : 32
+                },
+                "attack": {
+                    "attack_type": "univ_perturb",
+                    "weights_file": "sample_exper_dir/cifar10/univ_perturb/resnet9/train_attack/snapshots/run0",
+                    "eps": 0.031,
+                    "norm": "linf"
+                }
+            },
+            {
+                "evaluator_name": "pgd eps=0.031 steps=10 (attack)",
+                "evaluator_type": "attack",
+                "attack": {
+                    "attack_type": "pgd",
+                    "eps": 0.031,
+                    "norm": "linf",
+                    "add_arguments": {
+                        "alpha": 0.008,
+                        "num_iters": 10,
+                        "restarts": 1,
+                        "start": "random"
+                    }
+                }
+            }
+        ]
+    }
+}
